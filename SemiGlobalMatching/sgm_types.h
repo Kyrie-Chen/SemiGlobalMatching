@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <pcl/visualization/pcl_visualizer.h>
 
 /** \brief float无效值 */
 constexpr auto Invalid_Float = std::numeric_limits<float>::infinity();
@@ -23,3 +24,6 @@ typedef int64_t			sint64;		// 有符号64位整数
 typedef uint64_t		uint64;		// 无符号64位整数
 typedef float			float32;	// 单精度浮点
 typedef double			float64;	// 双精度浮点
+
+typedef pcl::PointXYZRGBA Point_color;		
+typedef pcl::PointCloud<Point_color> PointCloud_color;

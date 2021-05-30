@@ -5,16 +5,29 @@
 
 #include "stdafx.h"
 #include "SemiGlobalMatching.h"
+#include "new_util.h"
 #include <chrono>
 using namespace std::chrono;
 
 // opencv library
 #include <opencv2/opencv.hpp>
-#ifdef _DEBUG
-#pragma comment(lib,"opencv_world310d.lib")
-#else
-#pragma comment(lib,"opencv_world310.lib")
-#endif
+//#ifdef _DEBUG
+//#pragma comment(lib,"opencv_world310d.lib")
+//#else
+//#pragma comment(lib,"opencv_world310.lib")
+//#endif
+
+
+/* 参数设置 */
+//左相机参数
+//fx 0 cx
+//0 fy cy
+//0 0  1
+cv::Mat cameraMatrixL = (cv::Mat_<float>(3, 3) << 1426.379, 0, 712.043,
+	0, 1426.379, 476.526,
+	0, 0, 1);
+float baseline = 178.089;
+
 
 /**
  * \brief
@@ -26,15 +39,17 @@ using namespace std::chrono;
  */
 int main(int argv, char** argc)
 {
-    if (argv < 3) {
-        std::cout << "参数过少，请至少指定左右影像路径！" << std::endl;
-        return -1;
-    }
+	if (argv < 3) {
+		std::cout << "参数过少，请至少指定左右影像路径！" << std::endl;
+		return -1;
+	}
 
-    //···············································································//
-    // 读取影像
-    std::string path_left = argc[1];
-    std::string path_right = argc[2];
+	//···············································································//
+	// 读取影像
+	std::string path_left = argc[1];
+	//std::string path_left = "../Data/cone/im2.png";
+	std::string path_right = argc[2];
+	//std::string path_right = "../Data/cone/im6.png";
 
     cv::Mat img_left_c = cv::imread(path_left, cv::IMREAD_COLOR);
     cv::Mat img_left = cv::imread(path_left, cv::IMREAD_GRAYSCALE);
@@ -48,6 +63,9 @@ int main(int argv, char** argc)
         std::cout << "左右影像尺寸不一致！" << std::endl;
         return -1;
     }
+	cv::imshow("img_left", img_left);
+	cv::imshow("img_right", img_right);
+	//cv::waitKey(0);
 
 
     //···············································································//
@@ -69,10 +87,10 @@ int main(int argv, char** argc)
     // SGM匹配参数设计
     SemiGlobalMatching::SGMOption sgm_option;
     // 聚合路径数
-    sgm_option.num_paths = 8;
+    sgm_option.num_paths = 4;
     // 候选视差范围
     sgm_option.min_disparity = argv < 4 ? 0 : atoi(argc[3]);
-    sgm_option.max_disparity = argv < 5 ? 64 : atoi(argc[4]);
+    sgm_option.max_disparity = argv < 5 ? 128 : atoi(argc[4]);
     // census窗口类型
     sgm_option.census_size = SemiGlobalMatching::Census5x5;
     // 一致性检查
@@ -121,12 +139,15 @@ int main(int argv, char** argc)
     end = std::chrono::steady_clock::now();
     tt = duration_cast<std::chrono::milliseconds>(end - start);
     printf("\nSGM Matching...Done! Timing :   %lf s\n", tt.count() / 1000.0);
+	//保存数据
+	new_util::saveXYZ("disparity.csv", disparity, height, width);
 
     //···············································································//
 	// 显示视差图
     // 注意，计算点云不能用disp_mat的数据，它是用来显示和保存结果用的。计算点云要用上面的disparity数组里的数据，是子像素浮点数
     cv::Mat disp_mat = cv::Mat(height, width, CV_8UC1);
-    float min_disp = width, max_disp = -width;
+	new_util::float2Mat(disparity, disp_mat, height, width);
+    /*float min_disp = width, max_disp = -width;
     for (sint32 i = 0; i < height; i++) {
         for (sint32 j = 0; j < width; j++) {
             const float32 disp = disparity[i * width + j];
@@ -146,7 +167,7 @@ int main(int argv, char** argc)
                 disp_mat.data[i * width + j] = static_cast<uchar>((disp - min_disp) / (max_disp - min_disp) * 255);
             }
         }
-    }
+    }*/
 
     cv::imshow("视差图", disp_mat);
     cv::Mat disp_color;
@@ -159,6 +180,25 @@ int main(int argv, char** argc)
     cv::imwrite(disp_map_path, disp_mat);
     cv::imwrite(disp_color_map_path, disp_color);
 
+
+	//···············································································//
+	//计算得到深度图
+	auto depth = new float32[uint32(width * height)];
+	new_util::disp2Depth(disparity, depth, height, width, cameraMatrixL, baseline);
+	//保存数据
+	new_util::saveXYZ("depth.csv", depth, height, width);
+	
+	//显示深度图
+	cv::Mat depth_mat = cv::Mat(height, width, CV_8UC1);
+	new_util::float2Mat(depth, depth_mat, height, width);
+	cv::imshow("深度图", depth_mat);
+	cv::Mat depth_color;
+	applyColorMap(depth_mat, depth_color, cv::COLORMAP_JET);
+	cv::imshow("深度图-伪彩", depth_color);
+
+
+	//PointCloud_color::Ptr cloud;
+	//new_util::ConvertToPointCloud(img_left_c, depth, cloud, cameraMatrixL, cam_factor=1000);
 
     cv::waitKey(0);
 
@@ -173,5 +213,6 @@ int main(int argv, char** argc)
 
     system("pause");
     return 0;
+	
 }
 
