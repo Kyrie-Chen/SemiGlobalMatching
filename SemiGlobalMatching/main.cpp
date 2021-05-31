@@ -23,10 +23,14 @@ using namespace std::chrono;
 //fx 0 cx
 //0 fy cy
 //0 0  1
-cv::Mat cameraMatrixL = (cv::Mat_<float>(3, 3) << 1426.379, 0, 712.043,
-	0, 1426.379, 476.526,
+cv::Mat cameraMatrixL = (cv::Mat_<float>(3, 3) << 707.268, 0, 648.263,
+	0, 707.796, 340.080,
 	0, 0, 1);
-float baseline = 178.089;
+float baseline = 120.300;
+//cv::Mat cameraMatrixL = (cv::Mat_<float>(3, 3) << 1426.379, 0, 712.043,
+//	0, 1426.379, 476.526,
+//	0, 0, 1);
+//float baseline = 178.089;
 
 
 /**
@@ -39,17 +43,17 @@ float baseline = 178.089;
  */
 int main(int argv, char** argc)
 {
-	if (argv < 3) {
+	/*if (argv < 3) {
 		std::cout << "参数过少，请至少指定左右影像路径！" << std::endl;
 		return -1;
-	}
+	}*/
 
 	//···············································································//
 	// 读取影像
-	std::string path_left = argc[1];
-	//std::string path_left = "../Data/cone/im2.png";
-	std::string path_right = argc[2];
-	//std::string path_right = "../Data/cone/im6.png";
+	//std::string path_left = argc[1];
+	//std::string path_right = argc[2];
+	std::string path_left = "../data/640/5_left_0.jpg";
+	std::string path_right = "../data/640/5_right_0.jpg";
 
     cv::Mat img_left_c = cv::imread(path_left, cv::IMREAD_COLOR);
     cv::Mat img_left = cv::imread(path_left, cv::IMREAD_GRAYSCALE);
@@ -89,22 +93,24 @@ int main(int argv, char** argc)
     // 聚合路径数
     sgm_option.num_paths = 4;
     // 候选视差范围
-    sgm_option.min_disparity = argv < 4 ? 0 : atoi(argc[3]);
-    sgm_option.max_disparity = argv < 5 ? 128 : atoi(argc[4]);
+    //sgm_option.min_disparity = argv < 4 ? 0 : atoi(argc[3]);
+    //sgm_option.max_disparity = argv < 5 ? 128 : atoi(argc[4]);
+	sgm_option.min_disparity = 0;
+	sgm_option.max_disparity = 320;
     // census窗口类型
-    sgm_option.census_size = SemiGlobalMatching::Census5x5;
+    sgm_option.census_size = SemiGlobalMatching::Census5x5;			//9*9
     // 一致性检查
-    sgm_option.is_check_lr = true;
+    sgm_option.is_check_lr = true;			//false
     sgm_option.lrcheck_thres = 1.0f;
     // 唯一性约束
     sgm_option.is_check_unique = true;
     sgm_option.uniqueness_ratio = 0.99;
     // 剔除小连通区
-    sgm_option.is_remove_speckles = true;
-    sgm_option.min_speckle_aera = 50;
+    sgm_option.is_remove_speckles = true;		//false
+    sgm_option.min_speckle_aera = 50;	
     // 惩罚项P1、P2
     sgm_option.p1 = 10;
-    sgm_option.p2_init = 150;
+    sgm_option.p2_init = 150;		//64
     // 视差图填充
     // 视差图填充的结果并不可靠，若工程，不建议填充，若科研，则可填充
     sgm_option.is_fill_holes = false;
@@ -140,7 +146,7 @@ int main(int argv, char** argc)
     tt = duration_cast<std::chrono::milliseconds>(end - start);
     printf("\nSGM Matching...Done! Timing :   %lf s\n", tt.count() / 1000.0);
 	//保存数据
-	new_util::saveXYZ("disparity.csv", disparity, height, width);
+	//new_util::saveXYZ("disparity.csv", disparity, height, width);
 
     //···············································································//
 	// 显示视差图
@@ -175,8 +181,8 @@ int main(int argv, char** argc)
     cv::imshow("视差图-伪彩", disp_color);
 
     // 保存结果
-    std::string disp_map_path = argc[1]; disp_map_path += ".d.png";
-    std::string disp_color_map_path = argc[1]; disp_color_map_path += ".c.png";
+    std::string disp_map_path = path_left; disp_map_path += ".d.png";
+    std::string disp_color_map_path = path_left; disp_color_map_path += ".c.png";
     cv::imwrite(disp_map_path, disp_mat);
     cv::imwrite(disp_color_map_path, disp_color);
 
@@ -186,7 +192,7 @@ int main(int argv, char** argc)
 	auto depth = new float32[uint32(width * height)];
 	new_util::disp2Depth(disparity, depth, height, width, cameraMatrixL, baseline);
 	//保存数据
-	new_util::saveXYZ("depth.csv", depth, height, width);
+	//new_util::saveXYZ("depth.csv", depth, height, width);
 	
 	//显示深度图
 	cv::Mat depth_mat = cv::Mat(height, width, CV_8UC1);
