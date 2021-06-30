@@ -36,6 +36,9 @@
     <ClInclude Include="new_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TField.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="new_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TField.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

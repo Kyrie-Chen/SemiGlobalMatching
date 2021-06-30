@@ -98,7 +98,7 @@ int main(int argv, char** argc)
 	sgm_option.min_disparity = 0;
 	sgm_option.max_disparity = 320;
     // census窗口类型
-    sgm_option.census_size = SemiGlobalMatching::Census5x5;			//9*9
+    sgm_option.census_size = SemiGlobalMatching::Census9x7;		//9*7
     // 一致性检查
     sgm_option.is_check_lr = true;			//false
     sgm_option.lrcheck_thres = 1.0f;
@@ -107,7 +107,7 @@ int main(int argv, char** argc)
     sgm_option.uniqueness_ratio = 0.99;
     // 剔除小连通区
     sgm_option.is_remove_speckles = true;		//false
-    sgm_option.min_speckle_aera = 50;	
+    sgm_option.min_speckle_aera = 50;
     // 惩罚项P1、P2
     sgm_option.p1 = 10;
     sgm_option.p2_init = 150;		//64
@@ -146,13 +146,13 @@ int main(int argv, char** argc)
     tt = duration_cast<std::chrono::milliseconds>(end - start);
     printf("\nSGM Matching...Done! Timing :   %lf s\n", tt.count() / 1000.0);
 	//保存数据
-	//new_util::saveXYZ("disparity.csv", disparity, height, width);
+	new_util::saveXYZ("disparity.csv", disparity, height, width);
 
     //···············································································//
 	// 显示视差图
     // 注意，计算点云不能用disp_mat的数据，它是用来显示和保存结果用的。计算点云要用上面的disparity数组里的数据，是子像素浮点数
     cv::Mat disp_mat = cv::Mat(height, width, CV_8UC1);
-	new_util::float2Mat(disparity, disp_mat, height, width);
+	new_util::float2MatForDisplay(disparity, disp_mat, height, width);
     /*float min_disp = width, max_disp = -width;
     for (sint32 i = 0; i < height; i++) {
         for (sint32 j = 0; j < width; j++) {
@@ -181,8 +181,8 @@ int main(int argv, char** argc)
     cv::imshow("视差图-伪彩", disp_color);
 
     // 保存结果
-    std::string disp_map_path = path_left; disp_map_path += ".d.png";
-    std::string disp_color_map_path = path_left; disp_color_map_path += ".c.png";
+    std::string disp_map_path = path_left; disp_map_path += ".d0.png";
+    std::string disp_color_map_path = path_left; disp_color_map_path += ".c0.png";
     cv::imwrite(disp_map_path, disp_mat);
     cv::imwrite(disp_color_map_path, disp_color);
 
@@ -192,19 +192,27 @@ int main(int argv, char** argc)
 	auto depth = new float32[uint32(width * height)];
 	new_util::disp2Depth(disparity, depth, height, width, cameraMatrixL, baseline);
 	//保存数据
-	//new_util::saveXYZ("depth.csv", depth, height, width);
+	new_util::saveXYZ("depth.csv", depth, height, width);
 	
 	//显示深度图
 	cv::Mat depth_mat = cv::Mat(height, width, CV_8UC1);
-	new_util::float2Mat(depth, depth_mat, height, width);
+	new_util::float2MatForDisplay(depth, depth_mat, height, width);
 	cv::imshow("深度图", depth_mat);
 	cv::Mat depth_color;
 	applyColorMap(depth_mat, depth_color, cv::COLORMAP_JET);
 	cv::imshow("深度图-伪彩", depth_color);
 
-
-	//PointCloud_color::Ptr cloud;
-	//new_util::ConvertToPointCloud(img_left_c, depth, cloud, cameraMatrixL, cam_factor=1000);
+	//···············································································//
+	//点云计算
+	PointCloud_color::Ptr cloud(new PointCloud_color);
+	float cam_factor = 1000;
+	cv::Mat depth_mat_2 = cv::Mat(height, width, CV_8UC1);
+	new_util::float2MatForDisplay(depth, depth_mat_2, height, width);
+	new_util::ConvertToPointCloud(img_left_c, depth_mat_2, cloud, cameraMatrixL, cam_factor);
+	//显示
+	pcl::visualization::PCLVisualizer viewer("Depth Point");
+	viewer.addPointCloud(cloud, "cloud");
+	viewer.spin();
 
     cv::waitKey(0);
 

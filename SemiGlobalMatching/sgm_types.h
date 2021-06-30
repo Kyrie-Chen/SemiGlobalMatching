@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <limits>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <unordered_map>
 
 /** \brief float无效值 */
 constexpr auto Invalid_Float = std::numeric_limits<float>::infinity();
@@ -27,3 +28,9 @@ typedef double			float64;	// 双精度浮点
 
 typedef pcl::PointXYZRGBA Point_color;		
 typedef pcl::PointCloud<Point_color> PointCloud_color;
+
+struct 2DTemp {
+	
+	float temperature;
+};
+
